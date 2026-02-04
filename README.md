@@ -181,22 +181,81 @@ uuid,user@example.com,John Doe,admin,true,2024-01-01T00:00:00Z,2024-01-01T00:00:
 ## Testing
 
 ### Test Data
-The repository includes test datasets in `import_testdata_all_in_one/`:
-- `users_huge.csv` (10K rows) - includes validation test cases
-- `articles_huge.ndjson` (15K lines) - includes foreign key violations
-- `comments_huge.ndjson` (20K lines) - includes body length violations
+The repository includes comprehensive test datasets in `import_testdata_all_in_one/`:
+- `users_huge.csv` (10K rows) - includes invalid emails, duplicate emails, missing IDs, invalid roles
+- `articles_huge.ndjson` (15K lines) - includes invalid slugs, FK violations, drafts with published_at
+- `comments_huge.ndjson` (20K lines) - includes invalid article/user FKs, overly long bodies, missing fields
+
+These datasets are specifically designed to test validation logic and error handling with a mix of valid and intentionally invalid records.
+
+### Postman Collection
+A comprehensive Postman collection is included: `Bulk_Import_Export_API.postman_collection.json`
+
+#### Features:
+- **Complete API Coverage** - All import/export endpoints with proper payloads
+- **Test Data Integration** - Pre-configured to use the provided test datasets
+- **Auto Variable Extraction** - Job IDs automatically captured for request chaining  
+- **Built-in Tests** - Response validation, timing checks, and error assertions
+- **Smart Workflows** - Import → Status Check → Export → Download sequences
+
+#### Quick Setup:
+1. Import `Bulk_Import_Export_API.postman_collection.json` into Postman
+2. Set environment variable: `base_url = http://localhost:8080`
+3. Update file paths in upload requests to match your system paths
+4. Run individual requests or use Collection Runner for batch testing
+
+#### Key Test Scenarios:
+- **Import Testing**: Upload CSV/NDJSON files with validation edge cases
+- **Stream Exports**: Real-time data export with filtering and pagination
+- **Async Jobs**: Large dataset processing with status monitoring  
+- **Error Handling**: Invalid payloads, unsupported formats, rate limiting
+- **End-to-End Workflows**: Complete import → process → export → download cycles
 
 ### Running Tests
+
+#### Unit Tests
 ```bash
-# Run unit tests
+# Run all unit tests
 go test ./...
 
-# Test with sample data
-curl -X POST http://localhost:8080/v1/imports \
-  -F "file=@import_testdata_all_in_one/users_huge.csv" \
-  -F "resource_type=users" \
-  -F "format=csv"
+# Run tests with coverage
+go test -cover ./...
+
+# Run specific package tests
+go test ./internal/validation/...
 ```
+
+#### Integration Testing with Postman
+```bash
+# Start the server
+go run cmd/server/main.go
+
+# Use Postman Collection Runner to execute all test scenarios
+# Or run individual requests from the collection
+```
+
+#### Manual API Testing
+```bash
+# Test user import with validation errors
+curl -X POST http://localhost:8080/v1/imports \
+  -H "Idempotency-Key: test-users-001" \
+  -F "file=@import_testdata_all_in_one/users_huge.csv" \
+  -F "resource=users" \
+  -F "format=csv"
+
+# Test article export with filtering
+curl "http://localhost:8080/v1/exports?resource=articles&format=ndjson&status=published&limit=100" > articles.ndjson
+
+# Monitor job progress
+curl http://localhost:8080/v1/imports/{job_id}
+```
+
+#### Performance Testing
+The test datasets are sized for performance validation:
+- **Users**: 10K records → ~1-2 seconds import time
+- **Articles**: 15K records → ~3-5 seconds import time  
+- **Comments**: 20K records → ~4-6 seconds import time
+- **Export**: Should achieve 5K+ rows/sec throughput
 
 ## Monitoring
 

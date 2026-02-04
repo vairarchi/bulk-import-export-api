@@ -1,0 +1,604 @@
+{
+	"info": {
+		"_postman_id": "bulk-import-export-api",
+		"name": "Bulk Import/Export API",
+		"description": "Complete test collection for the bulk import/export API with users, articles, and comments",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/health",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"health"
+					]
+				},
+				"description": "Check if the API server is running and healthy"
+			},
+			"response": []
+		},
+		{
+			"name": "Import Users (CSV Upload)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Idempotency-Key",
+						"value": "{{$guid}}",
+						"description": "Unique key to prevent duplicate processing"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "./import_testdata_all_in_one/users_huge.csv",
+							"description": "CSV file with 10K users (includes validation test cases)"
+						},
+						{
+							"key": "resource_type",
+							"value": "users",
+							"type": "text"
+						},
+						{
+							"key": "format",
+							"value": "csv",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/v1/imports",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"imports"
+					]
+				},
+				"description": "Import users from CSV file. Contains 10K records with intentional validation errors for testing."
+			},
+			"response": []
+		},
+		{
+			"name": "Import Users (Remote URL)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Idempotency-Key",
+						"value": "{{$guid}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"url\": \"https://example.com/users.csv\",\n  \"resource_type\": \"users\",\n  \"format\": \"csv\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/v1/imports",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"imports"
+					]
+				},
+				"description": "Import users from remote URL (example - replace with actual URL)"
+			},
+			"response": []
+		},
+		{
+			"name": "Import Articles (NDJSON Upload)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Idempotency-Key",
+						"value": "{{$guid}}"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "./import_testdata_all_in_one/articles_huge.ndjson",
+							"description": "NDJSON file with 15K articles (includes validation test cases)"
+						},
+						{
+							"key": "resource_type",
+							"value": "articles",
+							"type": "text"
+						},
+						{
+							"key": "format",
+							"value": "ndjson",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/v1/imports",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"imports"
+					]
+				},
+				"description": "Import articles from NDJSON file. Contains 15K records with FK violations, invalid slugs, etc."
+			},
+			"response": []
+		},
+		{
+			"name": "Import Comments (NDJSON Upload)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Idempotency-Key",
+						"value": "{{$guid}}"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "./import_testdata_all_in_one/comments_huge.ndjson",
+							"description": "NDJSON file with 20K comments (includes validation test cases)"
+						},
+						{
+							"key": "resource_type",
+							"value": "comments",
+							"type": "text"
+						},
+						{
+							"key": "format",
+							"value": "ndjson",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/v1/imports",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"imports"
+					]
+				},
+				"description": "Import comments from NDJSON file. Contains 20K records with FK violations, body length issues, etc."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Import Job Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/v1/imports/{{import_job_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"imports",
+						"{{import_job_id}}"
+					]
+				},
+				"description": "Check status of import job. Use job_id from import response. Shows progress, errors, and completion status."
+			},
+			"response": []
+		},
+		{
+			"name": "Stream Export Users (CSV)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/v1/exports?resource_type=users&format=csv",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"exports"
+					],
+					"query": [
+						{
+							"key": "resource_type",
+							"value": "users"
+						},
+						{
+							"key": "format",
+							"value": "csv"
+						}
+					]
+				},
+				"description": "Stream export all users as CSV. Returns immediate streaming response."
+			},
+			"response": []
+		},
+		{
+			"name": "Stream Export Articles (NDJSON)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/v1/exports?resource_type=articles&format=ndjson&status=published",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"exports"
+					],
+					"query": [
+						{
+							"key": "resource_type",
+							"value": "articles"
+						},
+						{
+							"key": "format",
+							"value": "ndjson"
+						},
+						{
+							"key": "status",
+							"value": "published",
+							"description": "Filter by article status"
+						}
+					]
+				},
+				"description": "Stream export published articles as NDJSON with filtering."
+			},
+			"response": []
+		},
+		{
+			"name": "Stream Export Comments (NDJSON)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/v1/exports?resource_type=comments&format=ndjson&limit=1000",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"exports"
+					],
+					"query": [
+						{
+							"key": "resource_type",
+							"value": "comments"
+						},
+						{
+							"key": "format",
+							"value": "ndjson"
+						},
+						{
+							"key": "limit",
+							"value": "1000",
+							"description": "Limit number of records"
+						}
+					]
+				},
+				"description": "Stream export comments with limit."
+			},
+			"response": []
+		},
+		{
+			"name": "Create Async Export Job (Articles with Filters)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"resource_type\": \"articles\",\n  \"format\": \"ndjson\",\n  \"filters\": {\n    \"status\": \"published\",\n    \"author_id\": \"5864905b-ec8c-4fa6-8ba7-545d13f29b4e\",\n    \"created_after\": \"2024-01-01T00:00:00Z\"\n  },\n  \"compression\": \"gzip\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/v1/exports",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"exports"
+					]
+				},
+				"description": "Create async export job with filters and compression. Useful for large datasets."
+			},
+			"response": []
+		},
+		{
+			"name": "Create Async Export Job (All Users)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"resource_type\": \"users\",\n  \"format\": \"csv\",\n  \"filters\": {\n    \"active\": true,\n    \"role\": \"admin\"\n  }\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/v1/exports",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"exports"
+					]
+				},
+				"description": "Create async export job for active admin users only."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Export Job Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/v1/exports/{{export_job_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"exports",
+						"{{export_job_id}}"
+					]
+				},
+				"description": "Check status of async export job. Provides download URL when completed."
+			},
+			"response": []
+		},
+		{
+			"name": "Download Export File",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/downloads/{{export_filename}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"downloads",
+						"{{export_filename}}"
+					]
+				},
+				"description": "Download completed export file. Get filename from export job status response."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Admin Stats",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/v1/admin/stats",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"admin",
+						"stats"
+					]
+				},
+				"description": "Get system statistics including job counts, success rates, and performance metrics."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Prometheus Metrics",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/metrics",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"metrics"
+					]
+				},
+				"description": "Get Prometheus metrics for monitoring throughput, error rates, and performance."
+			},
+			"response": []
+		},
+		{
+			"name": "Test Invalid Import (Missing Resource)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"url\": \"https://example.com/data.csv\",\n  \"format\": \"csv\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/v1/imports",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"imports"
+					]
+				},
+				"description": "Test validation error - missing required 'resource' field."
+			},
+			"response": []
+		},
+		{
+			"name": "Test Invalid Export (Unsupported Format)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/v1/exports?resource_type=users&format=xml",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"v1",
+						"exports"
+					],
+					"query": [
+						{
+							"key": "resource_type",
+							"value": "users"
+						},
+						{
+							"key": "format",
+							"value": "xml",
+							"description": "Unsupported format to test error handling"
+						}
+					]
+				},
+				"description": "Test validation error - unsupported export format."
+			},
+			"response": []
+		},
+		{
+			"name": "Test Rate Limiting",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/health",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"health"
+					]
+				},
+				"description": "Make rapid requests to test rate limiting middleware. Run this multiple times quickly."
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-extract job IDs from responses for chaining requests",
+					"if (pm.response && pm.response.json() && pm.response.json().job_id) {",
+					"    pm.environment.set('import_job_id', pm.response.json().job_id);",
+					"    pm.environment.set('export_job_id', pm.response.json().job_id);",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Common test assertions for all requests",
+					"pm.test('Response time is reasonable', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(30000);",
+					"});",
+					"",
+					"// Auto-extract job IDs for follow-up requests",
+					"if (pm.response.json() && pm.response.json().job_id) {",
+					"    pm.environment.set('last_job_id', pm.response.json().job_id);",
+					"    ",
+					"    if (pm.request.url.toString().includes('/imports')) {",
+					"        pm.environment.set('import_job_id', pm.response.json().job_id);",
+					"    } else if (pm.request.url.toString().includes('/exports')) {",
+					"        pm.environment.set('export_job_id', pm.response.json().job_id);",
+					"    }",
+					"}",
+					"",
+					"// Extract download filename from export job response",
+					"if (pm.response.json() && pm.response.json().download_url) {",
+					"    const downloadUrl = pm.response.json().download_url;",
+					"    const filename = downloadUrl.split('/').pop();",
+					"    pm.environment.set('export_filename', filename);",
+					"}",
+					"",
+					"// Status-specific tests",
+					"if (pm.response.code === 200) {",
+					"    pm.test('Status code is 200 OK', function () {",
+					"        pm.response.to.have.status(200);",
+					"    });",
+					"} else if (pm.response.code === 202) {",
+					"    pm.test('Status code is 202 Accepted (async job)', function () {",
+					"        pm.response.to.have.status(202);",
+					"    });",
+					"} else if (pm.response.code >= 400) {",
+					"    pm.test('Error response has error message', function () {",
+					"        pm.expect(pm.response.json()).to.have.property('error');",
+					"    });",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"description": "Base URL for the API server"
+		},
+		{
+			"key": "import_job_id",
+			"value": "",
+			"description": "Auto-populated from import job responses"
+		},
+		{
+			"key": "export_job_id",
+			"value": "",
+			"description": "Auto-populated from export job responses"
+		},
+		{
+			"key": "export_filename",
+			"value": "",
+			"description": "Auto-populated from export job completion responses"
+		}
+	]
+}

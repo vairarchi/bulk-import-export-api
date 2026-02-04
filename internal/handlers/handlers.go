@@ -9,11 +9,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"bulk-import-export-api/internal/models"
-	"bulk-import-export-api/pkg/jobs"
-	"bulk-import-export-api/pkg/streaming"
-
 	"github.com/gin-gonic/gin"
+	"github.com/vairarchi/bulk-import-export-api/internal/models"
+	"github.com/vairarchi/bulk-import-export-api/pkg/jobs"
+	"github.com/vairarchi/bulk-import-export-api/pkg/streaming"
 )
 
 // Handler handles HTTP requests for import/export operations

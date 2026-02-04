@@ -14,11 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"bulk-import-export-api/internal/models"
-	"bulk-import-export-api/internal/validation"
-	"bulk-import-export-api/pkg/jobs"
-
 	"github.com/lib/pq"
+	"github.com/vairarchi/bulk-import-export-api/internal/models"
+	"github.com/vairarchi/bulk-import-export-api/internal/validation"
+	"github.com/vairarchi/bulk-import-export-api/pkg/jobs"
 )
 
 const (

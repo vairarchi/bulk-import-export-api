@@ -6,9 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"bulk-import-export-api/internal/models"
-
 	"github.com/google/uuid"
+	"github.com/vairarchi/bulk-import-export-api/internal/models"
 )
 
 // JobManager handles asynchronous job processing

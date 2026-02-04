@@ -11,11 +11,10 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
-	"bulk-import-export-api/internal/handlers"
-	"bulk-import-export-api/internal/storage"
-	"bulk-import-export-api/pkg/jobs"
-	"bulk-import-export-api/pkg/streaming"
+	"github.com/vairarchi/bulk-import-export-api/internal/handlers"
+	"github.com/vairarchi/bulk-import-export-api/internal/storage"
+	"github.com/vairarchi/bulk-import-export-api/pkg/jobs"
+	"github.com/vairarchi/bulk-import-export-api/pkg/streaming"
 )
 
 func main() {
@@ -65,6 +64,7 @@ func main() {
 	log.Printf("Uploads directory: %s", config.UploadsDir)
 	log.Printf("Exports directory: %s", config.ExportsDir)
 	log.Printf("Database: %s", maskDBURL(config.DatabaseURL))
+	log.Printf("🚀 Server is ready and listening for requests!")
 
 	if err := router.Run(config.ServerAddress); err != nil {
 		log.Fatalf("Failed to start server: %v", err)

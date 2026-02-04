@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"bulk-import-export-api/internal/models"
-
 	"github.com/lib/pq"
+	"github.com/vairarchi/bulk-import-export-api/internal/models"
 )
 
 // Storage provides database operations

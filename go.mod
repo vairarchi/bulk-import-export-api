@@ -1,4 +1,4 @@
-module bulk-import-export-api
+module github.com/vairarchi/bulk-import-export-api
 
 go 1.24.0
 

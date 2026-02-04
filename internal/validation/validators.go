@@ -7,9 +7,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"bulk-import-export-api/internal/models"
-
 	"github.com/go-playground/validator/v10"
+	"github.com/vairarchi/bulk-import-export-api/internal/models"
 )
 
 var (
