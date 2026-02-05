@@ -110,7 +110,6 @@ func (jm *JobManager) UpdateImportJob(id string, status string, progress int, to
 		job.Progress = progress
 		job.TotalRecords = totalRecords
 		job.ValidRecords = validRecords
-		job.ErrorRecords = errorRecords
 
 		// Append new errors (limit to prevent memory issues)
 		maxErrors := 1000
@@ -129,6 +128,9 @@ func (jm *JobManager) UpdateImportJob(id string, status string, progress int, to
 		} else {
 			job.Errors = append(job.Errors, errors...)
 		}
+
+		// Set error count based on actual accumulated errors
+		job.ErrorRecords = len(job.Errors)
 
 		if status == "completed" || status == "failed" {
 			now := time.Now()
@@ -190,6 +192,10 @@ func NewJobProcessor(jobManager *JobManager, storage Storage, processor DataProc
 // ProcessImportJob processes an import job asynchronously
 func (jp *JobProcessor) ProcessImportJob(ctx context.Context, jobID string, filePath string, format string) {
 	go func() {
+		// Create a timeout context for this specific job
+		jobCtx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancel()
+
 		job, exists := jp.jobManager.GetImportJob(jobID)
 		if !exists {
 			return
@@ -199,7 +205,7 @@ func (jp *JobProcessor) ProcessImportJob(ctx context.Context, jobID string, file
 		jp.jobManager.UpdateImportJob(jobID, "processing", 0, 0, 0, 0, nil)
 
 		// Process the import
-		err := jp.processor.ProcessImport(ctx, jobID, job.ResourceType, filePath, format)
+		err := jp.processor.ProcessImport(jobCtx, jobID, job.ResourceType, filePath, format)
 
 		if err != nil {
 			jp.jobManager.UpdateImportJob(jobID, "failed", 100, 0, 0, 0,
@@ -215,6 +221,10 @@ func (jp *JobProcessor) ProcessImportJob(ctx context.Context, jobID string, file
 // ProcessExportJob processes an export job asynchronously
 func (jp *JobProcessor) ProcessExportJob(ctx context.Context, jobID string) {
 	go func() {
+		// Create a timeout context for this specific job
+		jobCtx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancel()
+
 		job, exists := jp.jobManager.GetExportJob(jobID)
 		if !exists {
 			return
@@ -244,7 +254,7 @@ func (jp *JobProcessor) ProcessExportJob(ctx context.Context, jobID string) {
 		}
 
 		// Process the export
-		downloadURL, err := jp.processor.ProcessExport(ctx, jobID, job.ResourceType, job.Format, job.Filters)
+		downloadURL, err := jp.processor.ProcessExport(jobCtx, jobID, job.ResourceType, job.Format, job.Filters)
 
 		if err != nil {
 			jp.jobManager.UpdateExportJob(jobID, "failed", 100, totalRecords, "")

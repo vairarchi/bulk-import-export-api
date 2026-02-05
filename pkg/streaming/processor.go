@@ -117,27 +117,26 @@ func (p *Processor) processUsersCSV(ctx context.Context, jobID string, reader io
 			break
 		}
 		if err != nil {
-			// Handle CSV parsing error - we'll track this and update job directly
+			// Handle CSV parsing error - report immediately
 			parsingError := models.ValidationError{
 				Row:     rowNumber + 1,
 				Field:   "csv",
 				Message: fmt.Sprintf("CSV parsing error: %v", err),
 			}
-			p.jobManager.UpdateImportJob(jobID, "processing", 0, totalProcessed, totalValid, 1, []models.ValidationError{parsingError})
+			p.jobManager.UpdateImportJob(jobID, "processing", 0, totalProcessed, totalValid, 0, []models.ValidationError{parsingError})
 			rowNumber++
 			continue
 		}
 
 		user, parseErr := p.parseUserFromCSV(record, colIndex)
 		if parseErr != nil {
-			// Add parsing error to validator
-			validationErrors := []models.ValidationError{{
+			// Add parsing error - report immediately
+			parsingError := models.ValidationError{
 				Row:     rowNumber + 1,
 				Field:   "parsing",
 				Message: parseErr.Error(),
-			}}
-			// We'll track parsing errors separately and combine them later
-			p.jobManager.UpdateImportJob(jobID, "processing", 0, totalProcessed, totalValid, 1, validationErrors)
+			}
+			p.jobManager.UpdateImportJob(jobID, "processing", 0, totalProcessed, totalValid, 0, []models.ValidationError{parsingError})
 		} else {
 			batch = append(batch, user)
 		}
@@ -155,12 +154,15 @@ func (p *Processor) processUsersCSV(ctx context.Context, jobID string, reader io
 				totalValid += len(validUsers)
 			}
 
-			// Update job progress
+			// Update job progress with validation errors from this batch
 			progress := (totalProcessed * 50) / (totalProcessed + 1000) // Rough progress estimate
+			batchErrors := validator.GetErrors()
 			p.jobManager.UpdateImportJob(jobID, "processing", progress, totalProcessed, totalValid,
-				len(validator.GetErrors()), validator.GetErrors())
+				0, batchErrors) // errorRecords will be calculated by job manager
 
+			// Clear batch and validator for next iteration
 			batch = make([]models.User, 0, BatchSize)
+			validator = validation.NewBatchValidator(p.storage) // Reset validator for next batch
 		}
 	}
 
@@ -173,17 +175,15 @@ func (p *Processor) processUsersCSV(ctx context.Context, jobID string, reader io
 			}
 			totalValid += len(validUsers)
 		}
+
+		// Report final batch errors
+		finalErrors := validator.GetErrors()
+		p.jobManager.UpdateImportJob(jobID, "processing", 100, totalProcessed, totalValid,
+			0, finalErrors)
 	}
 
-	// Mark job as completed
-	allErrors := validator.GetErrors()
-	status := "completed"
-	if len(allErrors) > 0 && totalValid == 0 {
-		status = "failed"
-	}
-
-	p.jobManager.UpdateImportJob(jobID, status, 100, totalProcessed, totalValid,
-		len(allErrors), allErrors)
+	// Mark job as completed - no need to pass errors since job manager tracks them
+	p.jobManager.UpdateImportJob(jobID, "completed", 100, totalProcessed, totalValid, 0, nil)
 
 	return nil
 }
@@ -207,13 +207,13 @@ func (p *Processor) processArticlesNDJSON(ctx context.Context, jobID string, rea
 
 		var article models.Article
 		if err := decoder.Decode(&article); err != nil {
-			// Handle JSON parsing error - we'll track this and update job directly
+			// Handle JSON parsing error - report immediately
 			parsingError := models.ValidationError{
 				Row:     rowNumber + 1,
 				Field:   "json",
 				Message: fmt.Sprintf("JSON parsing error: %v", err),
 			}
-			p.jobManager.UpdateImportJob(jobID, "processing", 0, totalProcessed, totalValid, 1, []models.ValidationError{parsingError})
+			p.jobManager.UpdateImportJob(jobID, "processing", 0, totalProcessed, totalValid, 0, []models.ValidationError{parsingError})
 		} else {
 			batch = append(batch, article)
 		}
@@ -231,12 +231,15 @@ func (p *Processor) processArticlesNDJSON(ctx context.Context, jobID string, rea
 				totalValid += len(validArticles)
 			}
 
-			// Update job progress
+			// Update job progress with validation errors from this batch
 			progress := (totalProcessed * 50) / (totalProcessed + 1000) // Rough progress estimate
+			batchErrors := validator.GetErrors()
 			p.jobManager.UpdateImportJob(jobID, "processing", progress, totalProcessed, totalValid,
-				len(validator.GetErrors()), validator.GetErrors())
+				0, batchErrors) // errorRecords will be calculated by job manager
 
+			// Clear batch and validator for next iteration
 			batch = make([]models.Article, 0, BatchSize)
+			validator = validation.NewBatchValidator(p.storage) // Reset validator for next batch
 		}
 	}
 
@@ -249,17 +252,15 @@ func (p *Processor) processArticlesNDJSON(ctx context.Context, jobID string, rea
 			}
 			totalValid += len(validArticles)
 		}
+
+		// Report final batch errors
+		finalErrors := validator.GetErrors()
+		p.jobManager.UpdateImportJob(jobID, "processing", 100, totalProcessed, totalValid,
+			0, finalErrors)
 	}
 
-	// Mark job as completed
-	allErrors := validator.GetErrors()
-	status := "completed"
-	if len(allErrors) > 0 && totalValid == 0 {
-		status = "failed"
-	}
-
-	p.jobManager.UpdateImportJob(jobID, status, 100, totalProcessed, totalValid,
-		len(allErrors), allErrors)
+	// Mark job as completed - no need to pass errors since job manager tracks them
+	p.jobManager.UpdateImportJob(jobID, "completed", 100, totalProcessed, totalValid, 0, nil)
 
 	return nil
 }
@@ -283,13 +284,13 @@ func (p *Processor) processCommentsNDJSON(ctx context.Context, jobID string, rea
 
 		var comment models.Comment
 		if err := decoder.Decode(&comment); err != nil {
-			// Handle JSON parsing error - we'll track this and update job directly
+			// Handle JSON parsing error - report immediately
 			parsingError := models.ValidationError{
 				Row:     rowNumber + 1,
 				Field:   "json",
 				Message: fmt.Sprintf("JSON parsing error: %v", err),
 			}
-			p.jobManager.UpdateImportJob(jobID, "processing", 0, totalProcessed, totalValid, 1, []models.ValidationError{parsingError})
+			p.jobManager.UpdateImportJob(jobID, "processing", 0, totalProcessed, totalValid, 0, []models.ValidationError{parsingError})
 		} else {
 			batch = append(batch, comment)
 		}
@@ -307,12 +308,15 @@ func (p *Processor) processCommentsNDJSON(ctx context.Context, jobID string, rea
 				totalValid += len(validComments)
 			}
 
-			// Update job progress
+			// Update job progress with validation errors from this batch
 			progress := (totalProcessed * 50) / (totalProcessed + 1000) // Rough progress estimate
+			batchErrors := validator.GetErrors()
 			p.jobManager.UpdateImportJob(jobID, "processing", progress, totalProcessed, totalValid,
-				len(validator.GetErrors()), validator.GetErrors())
+				0, batchErrors) // errorRecords will be calculated by job manager
 
+			// Clear batch and validator for next iteration
 			batch = make([]models.Comment, 0, BatchSize)
+			validator = validation.NewBatchValidator(p.storage) // Reset validator for next batch
 		}
 	}
 
@@ -325,17 +329,15 @@ func (p *Processor) processCommentsNDJSON(ctx context.Context, jobID string, rea
 			}
 			totalValid += len(validComments)
 		}
+
+		// Report final batch errors
+		finalErrors := validator.GetErrors()
+		p.jobManager.UpdateImportJob(jobID, "processing", 100, totalProcessed, totalValid,
+			0, finalErrors)
 	}
 
-	// Mark job as completed
-	allErrors := validator.GetErrors()
-	status := "completed"
-	if len(allErrors) > 0 && totalValid == 0 {
-		status = "failed"
-	}
-
-	p.jobManager.UpdateImportJob(jobID, status, 100, totalProcessed, totalValid,
-		len(allErrors), allErrors)
+	// Mark job as completed - no need to pass errors since job manager tracks them
+	p.jobManager.UpdateImportJob(jobID, "completed", 100, totalProcessed, totalValid, 0, nil)
 
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -69,7 +70,7 @@ func (h *Handler) CreateImportJob(c *gin.Context) {
 
 	// Check content type for multipart upload
 	contentType := c.GetHeader("Content-Type")
-	if contentType != "" && contentType[:19] == "multipart/form-data" {
+	if contentType != "" && strings.HasPrefix(contentType, "multipart/form-data") {
 		// Handle multipart file upload
 		file, header, err := c.Request.FormFile("file")
 		if err != nil {
@@ -152,9 +153,7 @@ func (h *Handler) CreateImportJob(c *gin.Context) {
 	}
 
 	// Start processing asynchronously
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
-	defer cancel()
-
+	ctx := context.Background()
 	go h.jobProcessor.ProcessImportJob(ctx, job.ID, filePath, format)
 
 	c.JSON(http.StatusAccepted, gin.H{
@@ -232,9 +231,7 @@ func (h *Handler) CreateExportJob(c *gin.Context) {
 	job := h.jobManager.CreateExportJob(req.ResourceType, req.Format, req.Filters)
 
 	// Start processing asynchronously
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
-	defer cancel()
-
+	ctx := context.Background()
 	go h.jobProcessor.ProcessExportJob(ctx, job.ID)
 
 	c.JSON(http.StatusAccepted, gin.H{
